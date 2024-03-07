@@ -37,10 +37,10 @@ module ErbvHelper
 
   # Creates the container block level element specifically with
   #
-  def erbv_html(theme: nil, style: nil, lang: nil, &block)
+  def erbv_html(tag: :div, theme: nil, style: nil, lang: nil, &block)
     theme_class_name = "#{erbv_id} #{theme}".strip
 
-    content_tag(:div, class: theme_class_name, style:, &block)
+    content_tag(tag, class: theme_class_name, style:, &block)
   end
 
   # Set the component name by finding the filename from the erb file
@@ -54,6 +54,6 @@ module ErbvHelper
   # Defines a top level selector for the component
   #
   def erbv_component_base_selector
-    "div.#{erbv_id}"
+    ".#{erbv_id}"
   end
 end
