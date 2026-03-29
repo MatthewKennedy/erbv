@@ -1,16 +1,27 @@
 # Erbv
 
-Erbv is a Rails engine that provides helper methods for building reusable, self-contained view components in plain ERB. It gives each component a stable, scoped identifier and handles deduplication of CSS and JavaScript so styles and scripts are only rendered once per page, even when a component is used multiple times.
+Erbv (Encapsulated Ruby View Components) is a lightweight Rails engine that brings component-like encapsulation to standard Rails partials. It allows you to define scoped CSS and JavaScript directly inside your partials while ensuring that assets are only rendered once per page, regardless of how many times the component is used.
+
+## Features
+
+- **Scoped Styles**: Automatically generates unique CSS class names based on the partial's file path.
+- **Asset Deduplication**: CSS and JS blocks are captured and rendered once in your layout, preventing redundancy.
+- **Container Queries**: Built-in support for CSS Container Queries to make components truly responsive.
+- **Zero Boilerplate**: No need for separate Ruby classes; just use the Rails partials you already know.
 
 ## Installation
 
-Add to your Gemfile:
+Add this line to your application's Gemfile:
+
+Ruby
 
 ```ruby
 gem "erbv"
 ```
 
-Then run:
+And then execute:
+
+Bash
 
 ```bash
 bundle install
@@ -18,16 +29,18 @@ bundle install
 
 ## Setup
 
-Yield the erbv content blocks in your application layout:
+In your application layout (e.g., `app/views/layouts/application.html.erb`), add the `yield` calls for the captured assets within your `<head>` and at the bottom of the `<body>`:
+
+Code snippet
 
 ```erb
-<!DOCTYPE html>
 <html>
   <head>
     <%= yield :erbv_css %>
   </head>
   <body>
     <%= yield %>
+
     <%= yield :erbv_js %>
   </body>
 </html>
@@ -35,86 +48,82 @@ Yield the erbv content blocks in your application layout:
 
 ## Usage
 
-Erbv helpers are available in all ERB partials. A typical component partial looks like this:
+## 1. Create a Component
+
+Erbv components are standard Rails partials. Use the `erbv_*` helpers to define your styles, scripts, and HTML structure.
+
+Code snippet
 
 ```erb
-<%# app/views/components/_button.html.erb %>
+<%# app/views/components/_card.html.erb %>
 
 <% erbv_css do %>
   <style>
     <%= erbv_component_base_selector %> {
-      /* scoped styles */
-      background: blue;
-      color: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    @container (width > 400px) {
+      <%= erbv_component_base_selector %> {
+        display: flex;
+        gap: 1rem;
+      }
     }
   </style>
 <% end %>
 
 <% erbv_js do %>
-  <script>
-    // scoped JavaScript, rendered once per page
-  </script>
+  <script> console.log("Card component loaded"); </script>
 <% end %>
 
-<%= erbv_html do %>
-  <%= content %>
+<%= erbv_html(tag: :div) do %>
+  <h3><%= title %></h3>
+
+  <div class="content">
+    <%= yield %>
+  </div>
 <% end %>
 ```
 
-## Helpers
+## 2. Rendering the Component
 
-### `erbv_id`
+Because they are partials, you use the standard Rails `render` helper.
 
-Returns a unique identifier for the component based on the application name and the component's filename.
+#### Passing Data via Locals
 
-```
-"erbv--myapp--button"
-```
-
-### `erbv_name`
-
-Returns just the component name derived from the ERB partial filename (with the leading underscore removed).
-
-```
-"button"
-```
-
-### `erbv_component_base_selector`
-
-Returns a CSS class selector string for the component.
-
-```
-".erbv--myapp--button"
-```
-
-### `erbv_css(skip_auto_css_container: false, container_type: "inline-size")`
-
-Renders a CSS block into `:erbv_css` content. The block is only rendered once per page regardless of how many times the component is used.
-
-By default it also outputs a container query declaration scoped to the component. Pass `skip_auto_css_container: true` to disable this, or `container_type:` to use a different container type.
-
-### `erbv_js`
-
-Renders a JavaScript block into `:erbv_js` content. Like `erbv_css`, the block is only rendered once per page.
-
-### `erbv_html(tag: :div, theme: nil, style: nil, lang: nil)`
-
-Renders an HTML container element with the component's scoped class automatically applied. Pass `theme:` to append additional class names, `style:` for inline styles, and `lang:` for a lang attribute.
+Code snippet
 
 ```erb
-<%= erbv_html(tag: :section, theme: "dark", lang: "en") do %>
-  ...
+<%= render "components/card", title: "Hello World" do %>
+  <p>This is the card body.</p>
 <% end %>
 ```
 
-Renders as:
+## How it Works
 
-```html
-<section class="erbv--myapp--button dark" lang="en">
-  ...
-</section>
-```
+## Automatic Scoping
+
+When you call `erbv_html`, Erbv looks at the virtual path of the partial. It generates a unique CSS class name like `.erbv--components--card`.
+
+- `erbv_component_base_selector`: Returns this generated class name for use in your `<style>` tags.
+- `erbv_html`: Wraps your content in a tag (default is `div`) with this generated class.
+
+## Asset Management
+
+- **Deduplication**: If you render the "Card" component 10 times on one page, Erbv will only output the CSS and JS blocks once into your layout's `:erbv_css` and `:erbv_js` slots.
+- **Container Queries**: The `erbv_css` helper automatically adds `container-type: inline-size` to your component's base selector, enabling modern responsive design out of the box.
+
+## Helper Reference
+
+| **Helper**                        | **Description**                                              |
+| --------------------------------- | ------------------------------------------------------------ |
+| `erbv_html(tag: :div, **options)` | Wraps content in a container with the unique component class. |
+| `erbv_css(&block)`                | Captures CSS. Only renders once per component type per request. |
+| `erbv_js(&block)`                 | Captures JS. Only renders once per component type per request. |
+| `erbv_component_base_selector`    | Returns the unique CSS selector (e.g., `.erbv--path--to--partial`). |
 
 ## License
 
-MIT
+The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
