@@ -40,15 +40,13 @@ module ErbvHelper
   def erbv_html(tag: :div, theme: nil, style: nil, lang: nil, &block)
     theme_class_name = "#{erbv_id} #{theme}".strip
 
-    content_tag(tag, class: theme_class_name, style:, &block)
+    content_tag(tag, class: theme_class_name, style:, lang:, &block)
   end
 
   # Set the component name by finding the filename from the erb file
   #
   def erbv_name
-    caller_locations.each do |location|
-      return location.path.split(".").first.split("/").last.sub(/^_/, "") if location&.path&.ends_with?(".html.erb")
-    end
+    @virtual_path&.split("/")&.last&.sub(/^_/, "")
   end
 
   # Defines a top level selector for the component
